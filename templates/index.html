@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retém</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root {
+    --papel: #F3EFE6; --tinta: #1D1C1A; --laranja: #E4572E; --laranja-txt: #B23F17;
+    --azul: #2F5BD3; --cinza: #6E685E; --texto: #4B4740; --card: #FBF9F4; --borda: #E2DACB;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--papel); color: var(--tinta); font-family: 'DM Sans', Arial, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 64px 24px; }
+  .mono { font-family: 'JetBrains Mono', 'Courier New', monospace; }
+  .eyebrow { font-size: 13px; font-weight: 600; letter-spacing: 2px; color: var(--laranja-txt); margin: 0 0 8px; }
+  h1 { font-size: 72px; letter-spacing: -2px; margin: 0; line-height: 1; }
+  .sub { color: var(--texto); font-size: 18px; margin: 12px 0 28px; }
+  .como { margin-bottom: 32px; }
+  .como p { color: var(--texto); font-size: 16px; line-height: 1.5; margin: 0 0 12px; max-width: 720px; }
+  .passos { display: flex; flex-wrap: wrap; gap: 8px; }
+  .passos span { background: var(--tinta); color: var(--papel); font-size: 13px; padding: 8px 12px; border-radius: 8px; }
+  .passos b { color: #FF8A5B; }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .card { background: var(--card); border: 2px solid var(--borda); border-radius: 18px; padding: 28px; }
+  label { display: block; font-size: 14px; color: var(--cinza); margin: 18px 0 6px; }
+  label:first-child { margin-top: 0; }
+  input, select {
+    width: 100%; font: inherit; font-size: 18px; padding: 10px 12px;
+    border: 2px solid var(--borda); border-radius: 10px; background: #fff; color: var(--tinta);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--tinta); }
+  button {
+    margin-top: 22px; width: 100%; padding: 14px; border: 0; border-radius: 10px;
+    background: var(--tinta); color: var(--papel); font: inherit; font-weight: 700; font-size: 17px; cursor: pointer;
+  }
+  button:hover { background: #000; }
+
+  .vazio { color: var(--cinza); height: 100%; display: flex; align-items: center; }
+  .pct { font-size: 96px; font-weight: 700; letter-spacing: -3px; line-height: 1; margin: 4px 0 16px; }
+  .barra { height: 14px; background: var(--borda); border-radius: 7px; overflow: hidden; }
+  .barra div { height: 100%; border-radius: 7px; }
+  .decisao { font-size: 22px; font-weight: 700; margin: 20px 0 4px; }
+  .conta { font-size: 14px; color: var(--cinza); margin-top: 18px; line-height: 1.6; }
+  .cancela { color: var(--laranja); }
+  .fica { color: var(--azul); }
+
+  footer { margin-top: 40px; font-size: 13px; color: var(--cinza); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } h1 { font-size: 56px; } }
+</style>
+</head>
+<body>
+<main>
+  <p class="eyebrow mono">REGRESSÃO LOGÍSTICA · GRUPO 13</p>
+  <h1>Retém</h1>
+  <p class="sub">Coloca os dados do cliente e o modelo calcula a chance dele cancelar a assinatura.</p>
+
+  <div class="como">
+    <p>O modelo foi treinado com {{ total }} clientes simulados, sabendo quem cancelou e quem ficou. Pra um cliente novo, ele faz três coisas:</p>
+    <div class="passos mono">
+      <span><b>1.</b> calcula o z com as horas e os dias</span>
+      <span><b>2.</b> passa pela sigmoide → vira probabilidade</span>
+      <span><b>3.</b> compara com o limiar → manda desconto ou não</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <form class="card" method="get" action="/">
+      <label for="horas">Horas assistidas por semana</label>
+      <input id="horas" name="horas" type="number" min="0" max="40" step="0.1" required
+             value="{{ '%g'|format(horas) if horas is not none else '' }}" placeholder="ex: 5">
+
+      <label for="dias">Dias sem abrir o app</label>
+      <input id="dias" name="dias" type="number" min="0" max="60" step="1" required
+             value="{{ '%g'|format(dias) if dias is not none else '' }}" placeholder="ex: 10">
+
+      <label for="limiar">Limiar (a partir de quanto manda desconto)</label>
+      <select id="limiar" name="limiar">
+        {% for l in [0.3, 0.5, 0.7] %}
+        <option value="{{ l }}" {% if limiar == l %}selected{% endif %}>{{ (l * 100)|int }}%</option>
+        {% endfor %}
+      </select>
+
+      <button type="submit">Calcular</button>
+    </form>
+
+    <div class="card">
+      {% if r %}
+        <p class="eyebrow mono" style="color: var(--cinza)">CHANCE DE CANCELAR</p>
+        <p class="pct {{ 'cancela' if r.cancela else 'fica' }}">{{ r.p_txt }}%</p>
+        <div class="barra"><div style="width: {{ [r.p, 1]|max }}%; background: {{ 'var(--laranja)' if r.cancela else 'var(--azul)' }}"></div></div>
+        <p class="decisao">{{ 'Vai cancelar: manda desconto' if r.cancela else 'Deve ficar: não precisa de desconto' }}</p>
+        <p style="margin: 0; color: var(--texto)">com limiar de {{ (limiar * 100)|int }}%</p>
+        <p class="conta mono">z = {{ r.conta }} = {{ r.z }}<br>p = σ({{ r.z }}) = {{ r.p_txt }}%</p>
+      {% else %}
+        <p class="vazio">Preenche os dados ao lado e o resultado aparece aqui.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <footer class="mono">
+    <span>{{ formula }}</span>
+    <span>dados simulados · {{ total }} clientes · {{ cancelaram }} cancelaram</span>
+  </footer>
+</main>
+</body>
+</html>
